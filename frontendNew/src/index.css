@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible focus ring everywhere, keyboard users first */
+:focus-visible {
+  outline: 3px solid #0f7173;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Accessibility: large text mode, toggled via <html data-text-size="lg"> */
+html[data-text-size='lg'] {
+  font-size: 118%;
+}
+html[data-text-size='xl'] {
+  font-size: 134%;
+}
+
+/* Accessibility: high contrast mode, toggled via <html data-contrast="high"> */
+html[data-contrast='high'] body {
+  background-color: #ffffff;
+  color: #000000;
+}
+html[data-contrast='high'] .a11y-surface {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+html[data-contrast='high'] .a11y-muted {
+  color: #1a1a1a !important;
+}
+
+/* Reduced motion mode toggled explicitly from AccessibilityContext */
+html[data-reduced-motion='true'] *,
+html[data-reduced-motion='true'] *::before,
+html[data-reduced-motion='true'] *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}
+
+::selection {
+  background-color: #aed9d9;
+  color: #083a3b;
+}
+
+/* Minimal scrollbar polish */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #cdd6da;
+  border-radius: 999px;
+}
+
+.kiosk-touch-target {
+  min-height: 56px;
+  min-width: 56px;
+}
