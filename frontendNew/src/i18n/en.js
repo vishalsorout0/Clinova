@@ -1,6 +1,6 @@
 export default {
   common: {
-    appName: 'Sahayak',
+    appName: 'Clinova',
     tagline: 'AI-assisted pre-consultation support',
     continue: 'Continue',
     back: 'Back',
@@ -25,7 +25,7 @@ export default {
   welcome: {
     heading: 'Care that listens before the consultation begins',
     subheading:
-      'Sahayak helps you share your health story in your own language and pace, so your doctor can spend the visit on you — not on paperwork.',
+      'Clinova helps you share your health story in your own language and pace, so your doctor can spend the visit on you — not on paperwork.',
     startConsultation: 'Start consultation',
     doctorLogin: 'Doctor sign in',
     adminLogin: 'Admin sign in',

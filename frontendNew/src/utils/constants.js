@@ -1,7 +1,7 @@
 // Central place for fixed values used across the app.
 // Keep UI copy out of here — that belongs in /src/i18n.
 
-export const APP_NAME = 'Sahayak';
+export const APP_NAME = 'Clinova';
 
 export const ROLES = {
   PATIENT: 'patient',
