@@ -10,6 +10,29 @@ import PhysicianRegister from "../pages/auth/PhysicianRegister";
 
 import ProtectedRoute from "../components/common/ProtectedRoute";
 
+import PatientDashboard from "../pages/patient/PatientDashboard";
+import Profile from "../pages/patient/Profile";
+import MedicalHistory from "../pages/patient/MedicalHistory";
+import Documents from "../pages/patient/Documents";
+import LabReports from "../pages/patient/LabReports";
+import Medications from "../pages/patient/Medications";
+import Timeline from "../pages/patient/Timeline";
+import Summaries from "../pages/patient/Summaries";
+import Consultation from "../pages/patient/Consultation";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function Placeholder({ title }) {
   return (
     <div className="placeholder-page">
@@ -25,6 +48,7 @@ function Unauthorized() {
   return (
     <div className="placeholder-page">
       <h1>Unauthorized</h1>
+
       <p>
         You do not have permission to access this page.
       </p>
@@ -37,7 +61,12 @@ export default function AppRoutes() {
     <Routes>
       <Route
         path="/"
-        element={<Navigate to="/login" replace />}
+        element={
+          <Navigate
+            to="/login"
+            replace
+          />
+        }
       />
 
       <Route
@@ -60,18 +89,68 @@ export default function AppRoutes() {
         element={<Unauthorized />}
       />
 
-      <Route element={<ProtectedRoute allowedRoles={["patient"]} />}>
-        <Route
-          path="/patient/dashboard"
-          element={
-            <Placeholder title="Patient Dashboard" />
-          }
-        />
-      </Route>
+      {/* PATIENT ROUTES */}
 
       <Route
         element={
-          <ProtectedRoute allowedRoles={["physician"]} />
+          <ProtectedRoute
+            allowedRoles={["patient"]}
+          />
+        }
+      >
+        <Route
+          path="/patient/dashboard"
+          element={<PatientDashboard />}
+        />
+
+        <Route
+          path="/patient/profile"
+          element={<Profile />}
+        />
+
+        <Route
+          path="/patient/history"
+          element={<MedicalHistory />}
+        />
+
+        <Route
+          path="/patient/documents"
+          element={<Documents />}
+        />
+
+        <Route
+          path="/patient/labs"
+          element={<LabReports />}
+        />
+
+        <Route
+          path="/patient/medications"
+          element={<Medications />}
+        />
+
+        <Route
+          path="/patient/timeline"
+          element={<Timeline />}
+        />
+
+        <Route
+          path="/patient/summaries"
+          element={<Summaries />}
+        />
+
+          <Route
+          path="/patient/consultation"
+          element={<Consultation />}
+        />
+      </Route>
+
+      {/* PHYSICIAN */}
+
+      <Route
+        element={
+          <ProtectedRoute
+            allowedRoles={["physician"]}
+          />
         }
       >
         <Route
@@ -82,9 +161,13 @@ export default function AppRoutes() {
         />
       </Route>
 
+      {/* ADMIN */}
+
       <Route
         element={
-          <ProtectedRoute allowedRoles={["admin"]} />
+          <ProtectedRoute
+            allowedRoles={["admin"]}
+          />
         }
       >
         <Route
@@ -97,7 +180,12 @@ export default function AppRoutes() {
 
       <Route
         path="*"
-        element={<Navigate to="/login" replace />}
+        element={
+          <Navigate
+            to="/login"
+            replace
+          />
+        }
       />
     </Routes>
   );
