@@ -19,9 +19,10 @@ import Medications from "../pages/patient/Medications";
 import Timeline from "../pages/patient/Timeline";
 import Summaries from "../pages/patient/Summaries";
 import Consultation from "../pages/patient/Consultation";
-
-
-
+import PhysicianDashboard from "../pages/physician/PhysicianDashboard";
+import Patients from "../pages/physician/Patients";
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import Emergency from "../pages/patient/Emergency";
 
 
 
@@ -144,9 +145,14 @@ export default function AppRoutes() {
         />
       </Route>
 
+       <Route
+        path="/patient/emergency"
+        element={<Emergency />}
+      />
+
       {/* PHYSICIAN */}
 
-      <Route
+            <Route
         element={
           <ProtectedRoute
             allowedRoles={["physician"]}
@@ -156,7 +162,14 @@ export default function AppRoutes() {
         <Route
           path="/physician/dashboard"
           element={
-            <Placeholder title="Physician Dashboard" />
+            <PhysicianDashboard />
+          }
+        />
+
+        <Route
+          path="/physician/patients"
+          element={
+            <Patients />
           }
         />
       </Route>
@@ -170,13 +183,13 @@ export default function AppRoutes() {
           />
         }
       >
-        <Route
-          path="/admin/dashboard"
-          element={
-            <Placeholder title="Admin Dashboard" />
-          }
-        />
-      </Route>
+      <Route
+        path="/admin/dashboard"
+        element={
+          <AdminDashboard />
+        }
+      />
+    </Route>
 
       <Route
         path="*"
