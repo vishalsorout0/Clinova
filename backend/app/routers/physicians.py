@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from app.models.physician import Physician
 from sqlalchemy.orm import Session
-
 from app.database import get_db
-from app.dependencies.permissions import require_physician
 from app.models.user import User
+from app.dependencies.permissions import (
+    require_physician,
+    require_patient,
+)
 from app.schemas.physician import (
     PhysicianPatientResponse,
     PhysicianResponse,
@@ -22,10 +25,22 @@ from app.services.physician_service import (
 )
 
 
+
+
 router = APIRouter(
     prefix="/api/physicians",
     tags=["Physicians"],
 )
+
+
+
+
+
+
+
+
+
+
 
 
 def get_current_physician(
@@ -44,6 +59,52 @@ def get_current_physician(
         )
 
     return physician
+
+
+
+
+
+@router.get(
+    "/available",
+    response_model=list[PhysicianResponse],
+)
+def list_available_physicians(
+    search: str | None = Query(
+        default=None,
+        max_length=100,
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_patient),
+):
+    query = db.query(Physician)
+
+    if search and search.strip():
+        search_term = f"%{search.strip()}%"
+
+        query = query.filter(
+            (Physician.full_name.ilike(search_term))
+            | (
+                Physician.specialization.ilike(
+                    search_term
+                )
+            )
+            | (
+                Physician.registration_number.ilike(
+                    search_term
+                )
+            )
+        )
+
+    return (
+        query
+        .order_by(Physician.full_name.asc())
+        .all()
+    )
+
+
+
+
+
 
 
 @router.get(

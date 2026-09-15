@@ -8,8 +8,9 @@ import Login from "../pages/auth/Login";
 import PatientRegister from "../pages/auth/PatientRegister";
 import PhysicianRegister from "../pages/auth/PhysicianRegister";
 
-import ProtectedRoute from "../components/common/ProtectedRoute";
+import Doctors from "../pages/patient/Doctors";
 
+import ProtectedRoute from "../components/common/ProtectedRoute";
 import PatientDashboard from "../pages/patient/PatientDashboard";
 import Profile from "../pages/patient/Profile";
 import MedicalHistory from "../pages/patient/MedicalHistory";
@@ -99,6 +100,10 @@ export default function AppRoutes() {
           />
         }
       >
+        <Route
+          path="/patient/doctors"
+          element={<Doctors />}
+        />
         <Route
           path="/patient/dashboard"
           element={<PatientDashboard />}

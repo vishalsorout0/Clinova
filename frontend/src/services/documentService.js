@@ -72,6 +72,7 @@ export async function getPatientMedications(patientId) {
   );
 }
 
+
 export async function getMedication(medicationId) {
   return apiRequest(
     `/documents/medications/${medicationId}`

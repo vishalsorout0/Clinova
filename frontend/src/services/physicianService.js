@@ -82,3 +82,15 @@ export async function rejectSummary(
     }
   );
 }
+
+
+
+export async function getAvailablePhysicians(search = "") {
+  const query = search.trim()
+    ? `?search=${encodeURIComponent(search.trim())}`
+    : "";
+
+  return apiRequest(
+    `/physicians/available${query}`
+  );
+}

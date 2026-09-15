@@ -19,10 +19,6 @@ API base:
 
 http://127.0.0.1:8000/api
 
-- Make .env in frontend folder
-
-VITE_API_BASE_URL='your_backend_url'/api
-
 ## Run Frontend
 
 Install dependencies:
