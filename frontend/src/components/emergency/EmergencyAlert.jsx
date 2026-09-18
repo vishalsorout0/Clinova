@@ -5,12 +5,15 @@ export default function EmergencyAlert({
     return null;
   }
 
-  const data =
-    result.result || result;
+  const hasEmergency =
+    result.has_emergency === true ||
+    result.status === "emergency";
 
-  if (!data.has_red_flags) {
+  if (!hasEmergency) {
     return null;
   }
+
+  const alerts = result.alerts || [];
 
   return (
     <div className="emergency-alert">
@@ -18,37 +21,35 @@ export default function EmergencyAlert({
         🚨
       </div>
 
-      <div>
+      <div className="emergency-alert-content">
         <h3>
           Urgent Attention Required
         </h3>
 
         <p>
-          The consultation contains
-          potentially concerning symptoms.
+          Potentially concerning symptoms
+          were detected during your consultation.
         </p>
 
-        {data.priority && (
-          <strong>
-            Priority:{" "}
-            {data.priority}
-          </strong>
+        {result.priority && (
+          <p>
+            <strong>
+              Priority: {result.priority}
+            </strong>
+          </p>
         )}
 
-        {Array.isArray(
-          data.red_flags
-        ) &&
-          data.red_flags.length > 0 && (
-            <ul>
-              {data.red_flags.map(
-                (flag, index) => (
-                  <li key={index}>
-                    {flag}
-                  </li>
-                )
-              )}
-            </ul>
-          )}
+        {alerts.length > 0 && (
+          <ul>
+            {alerts.map(
+              (alert, index) => (
+                <li key={index}>
+                  {alert}
+                </li>
+              )
+            )}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -10,14 +10,19 @@ import {
   getMissingInformation,
   getRedFlags,
   endSession,
+  getPatientConversations,
+  getConversation,
+  getSession,
 } from "../services/conversationService";
 
 export function useConversation(patientId) {
-  const [session, setSession] =
-    useState(null);
+  const [session, setSession] = useState(null);
 
   const [conversation, setConversation] =
     useState(null);
+
+  const [conversations, setConversations] =
+    useState([]);
 
   const [messages, setMessages] =
     useState([]);
@@ -49,64 +54,292 @@ export function useConversation(patientId) {
   const [summary, setSummary] =
     useState(null);
 
-  const startConsultation =
-    useCallback(async () => {
-      if (!patientId) {
-        throw new Error(
-          "Patient ID is required."
-        );
+  /*
+   * Refresh AI information
+   */
+  const refreshAI = useCallback(
+    async (conversationId) => {
+      if (!conversationId) {
+        return;
       }
-
-      setLoading(true);
-      setError("");
 
       try {
-        /*
-         * 1. Create session
-         */
-        const newSession =
-          await createSession(patientId);
+        const [
+          question,
+          extract,
+          missing,
+          flags,
+        ] = await Promise.allSettled([
+          getNextQuestion(conversationId),
+          getAIExtract(conversationId),
+          getMissingInformation(conversationId),
+          getRedFlags(conversationId),
+        ]);
 
-        setSession(newSession);
+        if (question.status === "fulfilled") {
+          setNextQuestion(question.value);
+        }
 
-        /*
-         * Backend returns session id.
-         * We use it to create the conversation.
-         */
-        const sessionId =
-          newSession.id;
+        if (extract.status === "fulfilled") {
+          setExtractedData(extract.value);
+        }
 
-        /*
-         * 2. Create conversation
-         */
-        const newConversation =
-          await createConversation({
-            patient_id: patientId,
-            language: "en",
-            session_id: sessionId,
-          });
+        if (missing.status === "fulfilled") {
+          setMissingInformation(
+            normalizeMissingInformation(
+              missing.value
+            )
+          );
+        }
 
-        setConversation(
-          newConversation
-        );
-
-        setMessages([]);
-
-        setCompleted(false);
-
-        return newConversation;
+        if (flags.status === "fulfilled") {
+          setRedFlags(flags.value);
+        }
       } catch (err) {
-        setError(
-          err.message ||
-            "Unable to start consultation."
+        console.error(
+          "AI refresh error:",
+          err
+        );
+      }
+    },
+    []
+  );
+
+  /*
+   * Load all patient conversations
+   */
+  const loadConversations = useCallback(
+    async () => {
+      if (!patientId) {
+        return [];
+      }
+
+      const response =
+        await getPatientConversations(
+          patientId
         );
 
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    }, [patientId]);
+      const list =
+        Array.isArray(response)
+          ? response
+          : response?.conversations || [];
 
+      const sorted =
+        [...list].sort(
+          (a, b) =>
+            new Date(
+              b.started_at || 0
+            ) -
+            new Date(
+              a.started_at || 0
+            )
+        );
+
+      setConversations(sorted);
+
+      return sorted;
+    },
+    [patientId]
+  );
+
+  /*
+   * Load one specific conversation
+   */
+  const selectConversation =
+    useCallback(
+      async (conversationId) => {
+        if (!conversationId) {
+          return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        try {
+          const fullConversation =
+            await getConversation(
+              conversationId
+            );
+
+          setConversation(
+            fullConversation
+          );
+
+          setMessages(
+            Array.isArray(
+              fullConversation.messages
+            )
+              ? fullConversation.messages
+              : []
+          );
+
+          setCompleted(
+            fullConversation.status ===
+              "completed"
+          );
+
+          setSummary(null);
+
+          /*
+           * Restore session
+           */
+          if (
+            fullConversation.session_id
+          ) {
+            try {
+              const existingSession =
+                await getSession(
+                  fullConversation.session_id
+                );
+
+              setSession(
+                existingSession
+              );
+            } catch (sessionError) {
+              console.error(
+                "Unable to restore session:",
+                sessionError
+              );
+
+              setSession(null);
+            }
+          } else {
+            setSession(null);
+          }
+
+          /*
+           * Refresh AI information
+           */
+          await refreshAI(
+            fullConversation.id
+          );
+
+          return fullConversation;
+        } catch (err) {
+          setError(
+            err.message ||
+              "Unable to load conversation."
+          );
+
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      },
+      [refreshAI]
+    );
+
+  /*
+   * Start consultation
+   */
+  const startConsultation =
+    useCallback(
+      async () => {
+        if (!patientId) {
+          throw new Error(
+            "Patient ID is required."
+          );
+        }
+
+        setLoading(true);
+        setError("");
+
+        try {
+          /*
+           * Load all conversations
+           */
+          const list =
+            await loadConversations();
+
+          /*
+           * Find active conversations
+           */
+          const active =
+            list.filter(
+              (item) =>
+                item.status === "active"
+            );
+
+          /*
+           * If active chats exist,
+           * open the latest one
+           */
+          if (active.length > 0) {
+            const latestActive =
+              active[0];
+
+            const selected =
+              await selectConversation(
+                latestActive.id
+              );
+
+            return selected;
+          }
+
+          /*
+           * No active chat
+           * → create new session
+           */
+          const newSession =
+            await createSession(
+              patientId
+            );
+
+          setSession(
+            newSession
+          );
+
+          /*
+           * Create new conversation
+           */
+          const newConversation =
+            await createConversation({
+              patient_id: patientId,
+              language: "en",
+              session_id:
+                newSession.id,
+            });
+
+          setConversation(
+            newConversation
+          );
+
+          setMessages([]);
+
+          setNextQuestion(null);
+          setExtractedData(null);
+          setMissingInformation([]);
+          setRedFlags(null);
+          setCompleted(false);
+          setSummary(null);
+
+          /*
+           * Reload sidebar
+           */
+          await loadConversations();
+
+          return newConversation;
+        } catch (err) {
+          setError(
+            err.message ||
+              "Unable to start consultation."
+          );
+
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      },
+      [
+        patientId,
+        loadConversations,
+        selectConversation,
+      ]
+    );
+
+  /*
+   * Send patient message
+   */
   const sendPatientMessage =
     useCallback(
       async (content) => {
@@ -124,54 +357,48 @@ export function useConversation(patientId) {
         setError("");
 
         try {
-          /*
-           * Backend message schema:
-           *
-           * {
-           *   content: "...",
-           *   input_type: "text"
-           * }
-           */
           const response =
             await sendMessage(
               conversation.id,
               {
-                content: content.trim(),
-                input_type: "text",
+                content:
+                  content.trim(),
+                input_type:
+                  "text",
               }
             );
 
           /*
-           * Keep returned message.
-           *
-           * Depending on backend response shape,
-           * normalize it into a frontend message.
+           * Reload complete conversation
            */
-          const patientMessage =
-            response?.message ||
-            response;
+          const updatedConversation =
+            await getConversation(
+              conversation.id
+            );
 
-          setMessages((previous) => [
-            ...previous,
-            {
-              id:
-                patientMessage?.id ||
-                Date.now(),
-              role: "patient",
-              content:
-                patientMessage?.content ||
-                content.trim(),
-              created_at:
-                patientMessage?.created_at ||
-                new Date().toISOString(),
-            },
-          ]);
+          setConversation(
+            updatedConversation
+          );
+
+          setMessages(
+            Array.isArray(
+              updatedConversation.messages
+            )
+              ? updatedConversation.messages
+              : []
+          );
 
           /*
-           * Refresh AI information after
-           * every patient response.
+           * Refresh AI
            */
-          await refreshAI();
+          await refreshAI(
+            conversation.id
+          );
+
+          /*
+           * Refresh sidebar
+           */
+          await loadConversations();
 
           return response;
         } catch (err) {
@@ -185,136 +412,149 @@ export function useConversation(patientId) {
           setSending(false);
         }
       },
-      [conversation]
+      [
+        conversation,
+        refreshAI,
+        loadConversations,
+      ]
     );
 
-  const refreshAI = useCallback(
-    async () => {
-      if (!conversation?.id) {
-        return;
-      }
-
-      try {
-        const [
-          question,
-          extract,
-          missing,
-          flags,
-        ] = await Promise.allSettled([
-          getNextQuestion(
-            conversation.id
-          ),
-          getAIExtract(
-            conversation.id
-          ),
-          getMissingInformation(
-            conversation.id
-          ),
-          getRedFlags(
-            conversation.id
-          ),
-        ]);
-
-        if (
-          question.status ===
-          "fulfilled"
-        ) {
-          setNextQuestion(
-            question.value
-          );
-        }
-
-        if (
-          extract.status ===
-          "fulfilled"
-        ) {
-          setExtractedData(
-            extract.value
-          );
-        }
-
-        if (
-          missing.status ===
-          "fulfilled"
-        ) {
-          setMissingInformation(
-            normalizeMissingInformation(
-              missing.value
-            )
-          );
-        }
-
-        if (
-          flags.status ===
-          "fulfilled"
-        ) {
-          setRedFlags(
-            flags.value
-          );
-        }
-      } catch (err) {
-        console.error(
-          "AI refresh error:",
-          err
-        );
-      }
-    },
-    [conversation]
-  );
-
+  /*
+   * Complete consultation
+   */
   const complete =
-    useCallback(async () => {
-      if (!conversation?.id) {
-        throw new Error(
-          "No active conversation."
-        );
-      }
+    useCallback(
+      async () => {
+        if (!conversation?.id) {
+          throw new Error(
+            "No active conversation."
+          );
+        }
 
-      setLoading(true);
-      setError("");
+        setLoading(true);
+        setError("");
 
-      try {
-        const response =
-          await completeConversation(
-            conversation.id
+        try {
+          const response =
+            await completeConversation(
+              conversation.id
+            );
+
+          setCompleted(true);
+
+          /*
+           * Reload conversation
+           */
+          const updatedConversation =
+            await getConversation(
+              conversation.id
+            );
+
+          setConversation(
+            updatedConversation
           );
 
-        setCompleted(true);
+          setMessages(
+            Array.isArray(
+              updatedConversation.messages
+            )
+              ? updatedConversation.messages
+              : []
+          );
 
-        return response;
-      } catch (err) {
-        setError(
-          err.message ||
-            "Unable to complete consultation."
-        );
+          /*
+           * End session
+           */
+          if (session?.id) {
+            try {
+              await endSession(
+                session.id
+              );
 
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    }, [conversation]);
+              setSession(
+                (previous) =>
+                  previous
+                    ? {
+                        ...previous,
+                        status:
+                          "completed",
+                      }
+                    : previous
+              );
+            } catch (sessionError) {
+              console.error(
+                "Unable to end session:",
+                sessionError
+              );
+            }
+          }
 
+          /*
+           * Refresh sidebar
+           */
+          await loadConversations();
+
+          return response;
+        } catch (err) {
+          setError(
+            err.message ||
+              "Unable to complete consultation."
+          );
+
+          throw err;
+        } finally {
+          setLoading(false);
+        }
+      },
+      [
+        conversation,
+        session,
+        loadConversations,
+      ]
+    );
+
+  /*
+   * End session manually
+   */
   const closeSession =
-    useCallback(async () => {
-      if (!session?.id) {
-        return;
-      }
+    useCallback(
+      async () => {
+        if (!session?.id) {
+          return;
+        }
 
-      try {
-        return await endSession(
-          session.id
-        );
-      } catch (err) {
-        console.error(
-          "Unable to end session:",
-          err
-        );
-      }
-    }, [session]);
+        try {
+          const response =
+            await endSession(
+              session.id
+            );
+
+          setSession(
+            (previous) =>
+              previous
+                ? {
+                    ...previous,
+                    status:
+                      "completed",
+                  }
+                : previous
+          );
+
+          return response;
+        } catch (err) {
+          console.error(
+            "Unable to end session:",
+            err
+          );
+        }
+      },
+      [session]
+    );
 
   return {
     session,
     conversation,
+    conversations,
     messages,
 
     nextQuestion,
@@ -331,6 +571,8 @@ export function useConversation(patientId) {
     setSummary,
 
     startConsultation,
+    loadConversations,
+    selectConversation,
     sendPatientMessage,
     refreshAI,
     complete,
@@ -338,6 +580,9 @@ export function useConversation(patientId) {
   };
 }
 
+/*
+ * Normalize missing information
+ */
 function normalizeMissingInformation(
   data
 ) {

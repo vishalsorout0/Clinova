@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import Loader from "../../components/common/Loader";
 import PatientCard from "../../components/patient/PatientCard";
@@ -13,6 +13,8 @@ import {
 } from "../../services/documentService";
 
 export default function PatientDashboard() {
+  const navigate = useNavigate();
+
   const {
     profile,
     summaries,
@@ -98,28 +100,28 @@ export default function PatientDashboard() {
 
         <div className="page-header-actions">
 
-  <Link
-    to="/patient/doctors"
-    className="primary-link-button"
-  >
-    My Doctors
-  </Link>
+          <Link
+            to="/patient/doctors"
+            className="primary-link-button"
+          >
+            My Doctors
+          </Link>
 
-  <Link
-    to="/patient/profile"
-    className="primary-link-button"
-  >
-    Edit Profile
-  </Link>
+          <Link
+            to="/patient/profile"
+            className="primary-link-button"
+          >
+            Edit Profile
+          </Link>
 
-  <Link
-    to="/patient/consultation"
-    className="primary-link-button"
-  >
-    Start Consultation
-  </Link>
+          <Link
+            to="/patient/consultation"
+            className="primary-link-button"
+          >
+            Start Consultation
+          </Link>
 
-</div>
+        </div>
       </div>
 
       {error && (
@@ -170,6 +172,38 @@ export default function PatientDashboard() {
         </Link>
 
       </div>
+
+      {/* EMERGENCY SUPPORT */}
+      <section className="emergency-support-card">
+
+        <div className="emergency-support-content">
+
+          <div className="emergency-support-icon">
+            🚨
+          </div>
+
+          <div>
+            <h2>Emergency Support</h2>
+
+            <p>
+              Check for emergency symptoms and
+              get immediate support from your consultation.
+            </p>
+          </div>
+
+        </div>
+
+        <button
+          type="button"
+          className="emergency-support-button"
+          onClick={() =>
+            navigate("/patient/emergency")
+          }
+        >
+          Open Emergency Support
+        </button>
+
+      </section>
 
       {/* DOCUMENT UPLOAD */}
       <section className="dashboard-section">

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import ConsultationHeader from "../../components/consultation/ConsultationHeader";
+import ConsultationSidebar from "../../components/consultation/ConsultationSidebar";
 import ChatWindow from "../../components/consultation/ChatWindow";
 import ChatInput from "../../components/consultation/ChatInput";
 import RedFlagAlert from "../../components/consultation/RedFlagAlert";
@@ -22,25 +23,24 @@ export default function Consultation() {
     profile,
   } = usePatient();
 
-  const {
-    session,
-    conversation,
-    messages,
-    nextQuestion,
-    extractedData,
-    missingInformation,
-    redFlags,
-    loading,
-    sending,
-    error,
-    completed,
-
-    startConsultation,
-    sendPatientMessage,
-    complete,
-  } = useConversation(
-    profile?.id
-  );
+const {
+  session,
+  conversation,
+  conversations,
+  messages,
+  nextQuestion,
+  extractedData,
+  missingInformation,
+  redFlags,
+  loading,
+  sending,
+  error,
+  completed,
+  startConsultation,
+  selectConversation,
+  sendPatientMessage,
+  complete,
+} = useConversation(profile?.id);
 
   const [starting, setStarting] =
     useState(true);
@@ -168,72 +168,77 @@ export default function Consultation() {
       )}
 
       <div className="consultation-layout">
-        <main className="consultation-main">
-          <ChatWindow
-            messages={messages}
-            nextQuestion={nextQuestion}
+
+  <ConsultationSidebar
+    conversations={conversations}
+    selectedConversationId={
+      conversation?.id
+    }
+    onSelect={selectConversation}
+  />
+
+  <main className="consultation-main">
+    <ChatWindow
+      messages={messages}
+      nextQuestion={nextQuestion}
+    />
+
+    {!completed && (
+      <ChatInput
+        onSend={handleSend}
+        disabled={
+          sending || loading
+        }
+      />
+    )}
+  </main>
+
+  <aside className="consultation-info-sidebar">
+    <RedFlagAlert
+      redFlags={redFlags}
+    />
+
+    <div className="info-panel">
+      <h3>Information Collected</h3>
+
+      {extractedData ? (
+        <ExtractedInformation
+          data={
+            extractedData.data ||
+            extractedData
+          }
         />
+      ) : (
+        <p className="muted-text">
+          Start answering questions
+          to build your clinical history.
+        </p>
+      )}
+    </div>
 
-          {!completed && (
-            <ChatInput
-              onSend={handleSend}
-              disabled={
-                sending ||
-                loading
-              }
-            />
+    <div className="info-panel">
+      <h3>Missing Information</h3>
+
+      {missingInformation.length > 0 ? (
+        <ul className="missing-list">
+          {missingInformation.map(
+            (item, index) => (
+              <li key={index}>
+                {item}
+              </li>
+            )
           )}
-        </main>
+        </ul>
+      ) : (
+        <p className="muted-text">
+          No additional information
+          detected.
+        </p>
+      )}
+    </div>
+  </aside>
 
-        <aside className="consultation-sidebar">
-          <RedFlagAlert
-            redFlags={redFlags}
-          />
-
-
-          <div className="info-panel">
-            <h3>
-              Information Collected
-            </h3>
-
-            {extractedData ? (
-              <ExtractedInformation
-                data={
-                  extractedData.data ||
-                  extractedData
-                }
-              />
-            ) : (
-              <p className="muted-text">
-                Start answering questions to
-                build your clinical history.
-              </p>
-            )}
-          </div>
-
-          <div className="info-panel">
-            <h3>
-              Missing Information
-            </h3>
-
-            {missingInformation.length > 0 ? (
-              <ul className="missing-list">
-                {missingInformation.map(
-                  (item, index) => (
-                    <li key={index}>
-                      {item}
-                    </li>
-                  )
-                )}
-              </ul>
-            ) : (
-              <p className="muted-text">
-                No additional information detected.
-              </p>
-            )}
-          </div>
-        </aside>
-      </div>
+</div>
 
       {completed && (
         <div className="completion-panel">

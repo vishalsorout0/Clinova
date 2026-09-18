@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import EmergencyButton from "./EmergencyButton";
 import EmergencyAlert from "./EmergencyAlert";
@@ -11,16 +11,29 @@ import {
 export default function EmergencyPanel({
   conversationId,
 }) {
-  const [
-    result,
-    setResult,
-  ] = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [dismissed, setDismissed] = useState(false);
 
-  const [loading, setLoading] =
-    useState(false);
+  const dismissKey =
+    `clinova-emergency-dismissed-${conversationId}`;
 
-  const [error, setError] =
-    useState("");
+  useEffect(() => {
+    if (!conversationId) {
+      return;
+    }
+
+    const saved =
+      localStorage.getItem(dismissKey);
+
+    if (saved === "true") {
+      setDismissed(true);
+      setResult(null);
+    } else {
+      setDismissed(false);
+    }
+  }, [conversationId]);
 
   async function checkEmergency() {
     try {
@@ -28,11 +41,14 @@ export default function EmergencyPanel({
       setError("");
 
       const response =
-        await getEmergencyStatus(
-          conversationId
-        );
+        await getEmergencyStatus(conversationId);
 
       setResult(response);
+
+      // New safety check = show fresh result
+      setDismissed(false);
+
+      localStorage.removeItem(dismissKey);
     } catch (err) {
       setError(
         err.message ||
@@ -54,27 +70,48 @@ export default function EmergencyPanel({
         );
 
       setResult(response);
+      setDismissed(false);
+
+      localStorage.removeItem(dismissKey);
     } catch (err) {
       setError(
         err.message ||
-          "Unable to trigger emergency alert."
+          "Unable to create emergency alert."
       );
     } finally {
       setLoading(false);
     }
   }
 
+  function handleDismiss() {
+    // Completely remove emergency result
+    setResult(null);
+
+    // Hide emergency UI
+    setDismissed(true);
+
+    // Remember dismissal for this conversation
+    localStorage.setItem(
+      dismissKey,
+      "true"
+    );
+  }
+
   if (!conversationId) {
     return null;
   }
 
+  const hasEmergency =
+    result?.has_emergency === true ||
+    result?.status === "emergency";
+
   return (
     <section className="emergency-panel">
+
       <div className="emergency-panel-header">
+
         <div>
-          <span>
-            Safety Check
-          </span>
+          <span>Safety Check</span>
 
           <h3>
             Emergency Detection
@@ -82,11 +119,10 @@ export default function EmergencyPanel({
         </div>
 
         <EmergencyButton
-          onClick={
-            checkEmergency
-          }
+          onClick={checkEmergency}
           loading={loading}
         />
+
       </div>
 
       {error && (
@@ -95,13 +131,17 @@ export default function EmergencyPanel({
         </div>
       )}
 
-      <EmergencyAlert
-        result={result}
-      />
+      {/* EMERGENCY ALERT */}
+      {!dismissed && result && (
+        <EmergencyAlert
+          result={result}
+        />
+      )}
 
-      {result?.result?.has_red_flags &&
-        result?.result?.priority ===
-          "urgent" && (
+      {/* EMERGENCY ACTIONS */}
+      {!dismissed && hasEmergency && (
+        <div className="emergency-actions">
+
           <button
             type="button"
             className="trigger-emergency-button"
@@ -110,7 +150,38 @@ export default function EmergencyPanel({
           >
             🚨 Trigger Emergency Alert
           </button>
-        )}
+
+          <button
+            type="button"
+            className="dismiss-emergency-button"
+            onClick={handleDismiss}
+            disabled={loading}
+          >
+            ✓ I’m OK — Dismiss
+          </button>
+
+        </div>
+      )}
+
+      {/* AFTER DISMISS */}
+      {dismissed && (
+        <div className="emergency-dismissed">
+
+          <span>✓</span>
+
+          <div>
+            <strong>
+              You marked yourself as OK.
+            </strong>
+
+            <p>
+              The emergency alert has been dismissed.
+            </p>
+          </div>
+
+        </div>
+      )}
+
     </section>
   );
 }

@@ -12,8 +12,7 @@ import { usePatient } from "../../hooks/usePatient";
 import EmergencyPanel from "../../components/emergency/EmergencyPanel";
 
 export default function Emergency() {
-  const { profile } =
-    usePatient();
+  const { profile } = usePatient();
 
   const [
     conversation,
@@ -34,6 +33,7 @@ export default function Emergency() {
     async function loadConversation() {
       try {
         setLoading(true);
+        setError("");
 
         const response =
           await getPatientConversations(
@@ -43,14 +43,26 @@ export default function Emergency() {
         const conversations =
           Array.isArray(response)
             ? response
-            : response?.conversations ||
-              [];
+            : response?.conversations || [];
 
-        if (conversations.length > 0) {
+        // Find latest conversation that has messages
+        const conversationWithMessages =
+          [...conversations]
+            .reverse()
+            .find(
+              (item) =>
+                Array.isArray(item.messages) &&
+                item.messages.length > 0
+            );
+
+        if (conversationWithMessages) {
           setConversation(
-            conversations[
-              conversations.length - 1
-            ]
+            conversationWithMessages
+          );
+        } else {
+          setConversation(null);
+          setError(
+            "No consultation with messages found."
           );
         }
       } catch (err) {
@@ -68,7 +80,9 @@ export default function Emergency() {
 
   return (
     <div className="emergency-page">
+
       <div className="page-header">
+
         <span>
           CLINOVA SAFETY
         </span>
@@ -81,6 +95,7 @@ export default function Emergency() {
           Check the latest consultation
           for emergency indicators.
         </p>
+
       </div>
 
       {error && (
@@ -96,7 +111,8 @@ export default function Emergency() {
       )}
 
       {!loading &&
-        !conversation && (
+        !conversation &&
+        !error && (
           <div className="empty-state">
             No consultation found.
           </div>
@@ -109,6 +125,7 @@ export default function Emergency() {
           }
         />
       )}
+
     </div>
   );
 }
