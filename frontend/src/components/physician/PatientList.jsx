@@ -5,12 +5,40 @@ export default function PatientList({
   selectedPatient,
   onSelect,
   loading = false,
+  emergencyPatients = [],
 }) {
   const [search, setSearch] =
     useState("");
 
+  const emergencyPatientIds =
+    new Set(
+      emergencyPatients.map(
+        (patient) => patient.patient_id
+      )
+    );
+
+  const sortedPatients = [
+    ...patients,
+  ].sort((a, b) => {
+    const aEmergency =
+      emergencyPatientIds.has(a.id);
+
+    const bEmergency =
+      emergencyPatientIds.has(b.id);
+
+    if (aEmergency && !bEmergency) {
+      return -1;
+    }
+
+    if (!aEmergency && bEmergency) {
+      return 1;
+    }
+
+    return 0;
+  });
+
   const filteredPatients =
-    patients.filter((patient) => {
+    sortedPatients.filter((patient) => {
       const value =
         search
           .toLowerCase()
@@ -32,7 +60,9 @@ export default function PatientList({
 
   return (
     <div className="physician-patient-list">
+
       <div className="patient-list-header">
+
         <div>
           <h2>Patients</h2>
 
@@ -45,7 +75,9 @@ export default function PatientList({
         <span className="patient-count">
           {patients.length}
         </span>
+
       </div>
+
 
       <input
         type="search"
@@ -59,15 +91,18 @@ export default function PatientList({
         className="patient-search"
       />
 
+
       {loading && (
         <div className="patient-list-loading">
           Loading patients...
         </div>
       )}
 
+
       {!loading &&
         filteredPatients.length === 0 && (
           <div className="empty-state">
+
             <h3>
               No authorized patients
             </h3>
@@ -76,15 +111,24 @@ export default function PatientList({
               Patients who grant physician
               access will appear here.
             </p>
+
           </div>
         )}
 
+
       <div className="patients-list">
+
         {filteredPatients.map(
           (patient) => {
+
             const isSelected =
               selectedPatient?.id ===
               patient.id;
+
+            const isEmergency =
+              emergencyPatientIds.has(
+                patient.id
+              );
 
             return (
               <button
@@ -99,35 +143,76 @@ export default function PatientList({
                   onSelect(patient)
                 }
               >
+
                 <div className="patient-avatar">
                   {getInitials(
                     patient.full_name
                   )}
                 </div>
 
+
                 <div className="patient-list-info">
-                  <strong>
-                    {patient.full_name ||
-                      `Patient #${patient.id}`}
-                  </strong>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+
+                    <strong>
+                      {patient.full_name ||
+                        `Patient #${patient.id}`}
+                    </strong>
+
+                    {isEmergency && (
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: "700",
+                          color: "#dc2626",
+                          background:
+                            "#fee2e2",
+                          padding:
+                            "3px 7px",
+                          borderRadius:
+                            "999px",
+                          letterSpacing:
+                            "0.4px",
+                        }}
+                      >
+                        EMERGENCY
+                      </span>
+                    )}
+
+                  </div>
+
 
                   <span>
                     Patient ID:{" "}
                     {patient.id}
                   </span>
+
                 </div>
+
 
                 <span className="patient-arrow">
                   →
                 </span>
+
               </button>
             );
           }
         )}
+
       </div>
+
     </div>
   );
 }
+
 
 function getInitials(name = "") {
   return name

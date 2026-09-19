@@ -27,6 +27,11 @@ import Emergency from "../pages/patient/Emergency";
 
 
 
+import Users from "../pages/admin/Users";
+import AdminPatients from "../pages/admin/Patients";
+import Physicians from "../pages/admin/Physicians";
+import Sessions from "../pages/admin/Sessions";
+import AuditLogs from "../pages/admin/AuditLogs";
 
 
 
@@ -181,20 +186,55 @@ export default function AppRoutes() {
 
       {/* ADMIN */}
 
-      <Route
-        element={
-          <ProtectedRoute
-            allowedRoles={["admin"]}
-          />
-        }
-      >
-      <Route
-        path="/admin/dashboard"
-        element={
-          <AdminDashboard />
-        }
-      />
-    </Route>
+<Route
+  element={
+    <ProtectedRoute
+      allowedRoles={["admin"]}
+    />
+  }
+>
+  <Route
+    path="/admin/dashboard"
+    element={
+      <AdminDashboard />
+    }
+  />
+
+  <Route
+    path="/admin/users"
+    element={
+      <Users />
+    }
+  />
+
+  <Route
+    path="/admin/patients"
+    element={
+      <AdminPatients/>
+    }
+  />
+
+  <Route
+    path="/admin/physicians"
+    element={
+      <Physicians />
+    }
+  />
+
+  <Route
+    path="/admin/sessions"
+    element={
+      <Sessions />
+    }
+  />
+
+  <Route
+    path="/admin/audit-logs"
+    element={
+      <AuditLogs />
+    }
+  />
+</Route>
 
       <Route
         path="*"

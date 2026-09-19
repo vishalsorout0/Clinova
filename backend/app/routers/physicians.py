@@ -1,28 +1,70 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from app.models.physician import Physician
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    status,
+)
+
 from sqlalchemy.orm import Session
-from app.database import get_db
+
+from app.models.physician import Physician
 from app.models.user import User
+
+from app.database import get_db
+
 from app.dependencies.permissions import (
     require_physician,
     require_patient,
 )
+
 from app.schemas.physician import (
     PhysicianPatientResponse,
     PhysicianResponse,
     PhysicianSummaryAction,
     PhysicianSummaryResponse,
     PhysicianSummaryUpdate,
+    PhysicianPatientRecordsResponse,
 )
+
 from app.services.physician_service import (
     get_authorized_patients,
     get_physician_by_user_id,
     get_summary_for_physician,
     get_patient_summaries,
+    get_patient_records_for_physician,
     reject_summary,
     update_summary_for_physician,
     verify_summary,
 )
+
+from fastapi.responses import FileResponse
+from pathlib import Path
+import mimetypes
+from app.models.document import Document
+from app.services.physician_service import has_physician_access
+
+from app.models.conversation import Conversation
+from app.services.ai_service import detect_red_flags
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -31,16 +73,6 @@ router = APIRouter(
     prefix="/api/physicians",
     tags=["Physicians"],
 )
-
-
-
-
-
-
-
-
-
-
 
 
 def get_current_physician(
@@ -59,9 +91,6 @@ def get_current_physician(
         )
 
     return physician
-
-
-
 
 
 @router.get(
@@ -97,14 +126,11 @@ def list_available_physicians(
 
     return (
         query
-        .order_by(Physician.full_name.asc())
+        .order_by(
+            Physician.full_name.asc()
+        )
         .all()
     )
-
-
-
-
-
 
 
 @router.get(
@@ -138,6 +164,38 @@ def list_authorized_patients(
         db,
         physician.id,
     )
+
+
+@router.get(
+    "/patients/{patient_id}/records",
+    response_model=PhysicianPatientRecordsResponse,
+)
+def get_patient_records(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_physician),
+):
+    physician = get_current_physician(
+        db,
+        current_user,
+    )
+
+    records = get_patient_records_for_physician(
+        db,
+        physician.id,
+        patient_id,
+    )
+
+    if not records:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "Patient not found or physician "
+                "access has not been granted"
+            ),
+        )
+
+    return records
 
 
 @router.get(
@@ -298,4 +356,131 @@ def reject_clinical_summary(
         db,
         summary,
         data.physician_notes,
+    )
+
+
+@router.get("/emergency-patients")
+def get_emergency_patients(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_physician),
+):
+    physician = get_current_physician(
+        db,
+        current_user,
+    )
+
+    authorized_patients = get_authorized_patients(
+        db,
+        physician.id,
+    )
+
+    emergency_patients = []
+
+    for patient in authorized_patients:
+
+        conversations = (
+            db.query(Conversation)
+            .filter(
+                Conversation.patient_id == patient.id
+            )
+            .order_by(
+                Conversation.started_at.desc()
+            )
+            .all()
+        )
+
+        for conversation in conversations:
+
+            messages = conversation.messages or []
+
+            if not messages:
+                continue
+
+            try:
+                result = detect_red_flags(messages)
+            except (ValueError, RuntimeError):
+                continue
+
+            if result["has_red_flags"]:
+
+                emergency_patients.append({
+                    "patient_id": patient.id,
+                    "patient_name": patient.full_name,
+                    "conversation_id": conversation.id,
+                    "priority": result["priority"],
+                    "alerts": result["red_flags"],
+                    "conversation_status": conversation.status,
+                    "started_at": conversation.started_at,
+                })
+
+                # Latest emergency conversation only
+                break
+
+    return {
+        "emergency_patients": emergency_patients,
+        "count": len(emergency_patients),
+    }
+
+@router.get("/documents/{document_id}/file")
+def view_patient_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_physician),
+):
+    physician = get_physician_by_user_id(
+        db,
+        current_user.id,
+    )
+
+    if not physician:
+        raise HTTPException(
+            status_code=404,
+            detail="Physician profile not found",
+        )
+
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id)
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found",
+        )
+
+    # Patient-specific consent check
+    if not has_physician_access(
+        db,
+        physician.id,
+        document.patient_id,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Patient consent is required",
+        )
+
+    # Get stored file path
+    file_path = Path(document.file_path)
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Document file not found on server",
+        )
+
+    # Detect MIME type
+    media_type = mimetypes.guess_type(
+        file_path.name
+    )[0]
+
+    if not media_type:
+        media_type = "application/octet-stream"
+
+    return FileResponse(
+        path=str(file_path),
+        media_type=media_type,
+        filename=document.file_name,
+        content_disposition_type="inline",
     )

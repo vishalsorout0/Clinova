@@ -6,6 +6,7 @@ import {
 import {
   getMyPhysicianProfile,
   getAuthorizedPatients,
+  getEmergencyPatients,
 } from "../../services/physicianService";
 
 import PatientList from "../../components/physician/PatientList";
@@ -24,6 +25,11 @@ export default function PhysicianDashboard() {
   ] = useState([]);
 
   const [
+    emergencyPatients,
+    setEmergencyPatients,
+  ] = useState([]);
+
+  const [
     selectedPatient,
     setSelectedPatient,
   ] = useState(null);
@@ -39,17 +45,21 @@ export default function PhysicianDashboard() {
   const [error, setError] =
     useState("");
 
+
   useEffect(() => {
     async function loadDashboard() {
       try {
         setLoading(true);
+        setError("");
 
         const [
           profile,
           authorizedPatients,
+          emergencyData,
         ] = await Promise.all([
           getMyPhysicianProfile(),
           getAuthorizedPatients(),
+          getEmergencyPatients(),
         ]);
 
         setPhysician(profile);
@@ -62,6 +72,12 @@ export default function PhysicianDashboard() {
             : authorizedPatients?.patients ||
                 []
         );
+
+        setEmergencyPatients(
+          emergencyData?.emergency_patients ||
+            []
+        );
+
       } catch (err) {
         setError(
           err.message ||
@@ -75,6 +91,7 @@ export default function PhysicianDashboard() {
     loadDashboard();
   }, []);
 
+
   function handlePatientSelect(
     patient
   ) {
@@ -82,20 +99,30 @@ export default function PhysicianDashboard() {
     setSelectedSummary(null);
   }
 
+
   function handleSummarySelect(
     summary
   ) {
     setSelectedSummary(summary);
   }
 
+
   function handleBackToPatient() {
     setSelectedSummary(null);
   }
 
+
   return (
     <div className="physician-dashboard">
+
+      {/* ================================
+          HEADER
+      ================================= */}
+
       <header className="physician-dashboard-header">
+
         <div>
+
           <span className="dashboard-eyebrow">
             Clinova Physician Portal
           </span>
@@ -110,10 +137,13 @@ export default function PhysicianDashboard() {
             Review authorized patient
             clinical summaries.
           </p>
+
         </div>
+
 
         {physician && (
           <div className="physician-profile-mini">
+
             <strong>
               {physician.full_name}
             </strong>
@@ -122,9 +152,16 @@ export default function PhysicianDashboard() {
               {physician.specialization ||
                 "Physician"}
             </span>
+
           </div>
         )}
+
       </header>
+
+
+      {/* ================================
+          ERROR
+      ================================= */}
 
       {error && (
         <div className="alert alert-error">
@@ -132,7 +169,15 @@ export default function PhysicianDashboard() {
         </div>
       )}
 
+
+      {/* ================================
+          DASHBOARD
+      ================================= */}
+
       <div className="physician-dashboard-grid">
+
+        {/* PATIENT LIST */}
+
         <PatientList
           patients={patients}
           selectedPatient={
@@ -142,17 +187,27 @@ export default function PhysicianDashboard() {
             handlePatientSelect
           }
           loading={loading}
+          emergencyPatients={
+            emergencyPatients
+          }
         />
 
+
+        {/* PATIENT CONTENT */}
+
         <section className="physician-content">
+
           {selectedSummary ? (
+
             <SummaryReview
               summaryId={
                 selectedSummary.id
               }
+
               onBack={
                 handleBackToPatient
               }
+
               onUpdated={
                 (updated) => {
                   setSelectedSummary(
@@ -161,19 +216,29 @@ export default function PhysicianDashboard() {
                 }
               }
             />
+
           ) : (
+
             <PatientOverview
               patient={
                 selectedPatient
               }
-              physician={physician}
+
+              physician={
+                physician
+              }
+
               onSummarySelect={
                 handleSummarySelect
               }
             />
+
           )}
+
         </section>
+
       </div>
+
     </div>
   );
 }

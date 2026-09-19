@@ -1,12 +1,16 @@
 import { apiRequest } from "./api";
 
-/* USERS */
+
+/*  
+   USERS
+  */
 
 export async function getUsers() {
   return apiRequest(
     "/admin/users"
   );
 }
+
 
 export async function getUser(
   userId
@@ -16,41 +20,45 @@ export async function getUser(
   );
 }
 
+
 export async function updateUserRole(
   userId,
   role
 ) {
   return apiRequest(
-    `/admin/users/${userId}/role`,
+    `/admin/users/${userId}/role?role=${encodeURIComponent(
+      role
+    )}`,
     {
       method: "PATCH",
-      body: { role },
     }
   );
 }
+
 
 export async function updateUserStatus(
   userId,
   isActive
 ) {
   return apiRequest(
-    `/admin/users/${userId}/status`,
+    `/admin/users/${userId}/status?is_active=${isActive}`,
     {
       method: "PATCH",
-      body: {
-        is_active: isActive,
-      },
     }
   );
 }
 
-/* PATIENTS */
+
+/*  
+   PATIENTS
+  */
 
 export async function getAdminPatients() {
   return apiRequest(
     "/admin/patients"
   );
 }
+
 
 export async function getAdminPatient(
   patientId
@@ -60,13 +68,17 @@ export async function getAdminPatient(
   );
 }
 
-/* PHYSICIANS */
+
+/*  
+   PHYSICIANS
+  */
 
 export async function getAdminPhysicians() {
   return apiRequest(
     "/admin/physicians"
   );
 }
+
 
 export async function getAdminPhysician(
   physicianId
@@ -76,13 +88,17 @@ export async function getAdminPhysician(
   );
 }
 
-/* SESSIONS */
+
+/*  
+   SESSIONS
+  */
 
 export async function getAdminSessions() {
   return apiRequest(
     "/admin/sessions"
   );
 }
+
 
 export async function getAdminSession(
   sessionId
@@ -92,7 +108,10 @@ export async function getAdminSession(
   );
 }
 
-/* AUDIT */
+
+/*  
+   AUDIT LOGS
+  */
 
 export async function getAuditLogs() {
   return apiRequest(

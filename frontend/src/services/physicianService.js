@@ -6,11 +6,32 @@ export async function getMyPhysicianProfile() {
   return apiRequest("/physicians/me");
 }
 
+
 /* ---------------- AUTHORIZED PATIENTS ---------------- */
 
 export async function getAuthorizedPatients() {
   return apiRequest("/physicians/patients");
 }
+
+
+/* ---------------- EMERGENCY PATIENTS ---------------- */
+
+export async function getEmergencyPatients() {
+  return apiRequest(
+    "/physicians/emergency-patients"
+  );
+}
+
+/* ---------------- COMPLETE PATIENT RECORD ---------------- */
+
+export async function getPhysicianPatientRecords(
+  patientId
+) {
+  return apiRequest(
+    `/physicians/patients/${patientId}/records`
+  );
+}
+
 
 /* ---------------- PATIENT SUMMARIES ---------------- */
 
@@ -22,6 +43,7 @@ export async function getPatientSummaries(
   );
 }
 
+
 /* ---------------- SINGLE SUMMARY ---------------- */
 
 export async function getPhysicianSummary(
@@ -31,6 +53,7 @@ export async function getPhysicianSummary(
     `/physicians/summaries/${summaryId}`
   );
 }
+
 
 /* ---------------- UPDATE SUMMARY ---------------- */
 
@@ -46,6 +69,7 @@ export async function updatePhysicianSummary(
     }
   );
 }
+
 
 /* ---------------- VERIFY ---------------- */
 
@@ -64,6 +88,7 @@ export async function verifySummary(
     }
   );
 }
+
 
 /* ---------------- REJECT ---------------- */
 
@@ -84,13 +109,28 @@ export async function rejectSummary(
 }
 
 
+/* ---------------- AVAILABLE PHYSICIANS ---------------- */
 
-export async function getAvailablePhysicians(search = "") {
+export async function getAvailablePhysicians(
+  search = ""
+) {
   const query = search.trim()
-    ? `?search=${encodeURIComponent(search.trim())}`
+    ? `?search=${encodeURIComponent(
+        search.trim()
+      )}`
     : "";
 
   return apiRequest(
     `/physicians/available${query}`
   );
+}
+
+
+
+export function getPhysicianDocumentUrl(documentId) {
+  const baseUrl =
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:8000/api";
+
+  return `${baseUrl}/physicians/documents/${documentId}/file`;
 }

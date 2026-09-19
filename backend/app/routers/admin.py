@@ -7,17 +7,32 @@ from app.models.user import User
 from app.models.patient import Patient
 from app.models.physician import Physician
 from app.models.session import Session as PatientSession
-from app.services.audit_service import create_audit_log, get_audit_logs
+from app.services.audit_service import (
+    create_audit_log,
+    get_audit_logs,
+)
 
-router = APIRouter(prefix="/api/admin", tags=["Admin"])
 
+router = APIRouter(
+    prefix="/api/admin",
+    tags=["Admin"],
+)
+
+
+ 
+# USERS
+ 
 
 @router.get("/users")
 def read_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    users = db.query(User).order_by(User.id).all()
+    users = (
+        db.query(User)
+        .order_by(User.id.desc())
+        .all()
+    )
 
     return [
         {
@@ -37,7 +52,11 @@ def read_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
 
     if not user:
         raise HTTPException(
@@ -61,7 +80,11 @@ def update_user_role(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    allowed_roles = {"patient", "physician", "admin"}
+    allowed_roles = {
+        "patient",
+        "physician",
+        "admin",
+    }
 
     if role not in allowed_roles:
         raise HTTPException(
@@ -69,7 +92,11 @@ def update_user_role(
             detail="Invalid role",
         )
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
 
     if not user:
         raise HTTPException(
@@ -77,7 +104,10 @@ def update_user_role(
             detail="User not found",
         )
 
-    if user.id == current_user.id and role != "admin":
+    if (
+        user.id == current_user.id
+        and role != "admin"
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Admin cannot remove their own admin role",
@@ -95,7 +125,10 @@ def update_user_role(
         action="user_role_updated",
         entity_type="user",
         entity_id=user.id,
-        details=f"Role changed from {old_role} to {role}",
+        details=(
+            f"Role changed from "
+            f"{old_role} to {role}"
+        ),
     )
 
     return {
@@ -113,7 +146,11 @@ def update_user_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
 
     if not user:
         raise HTTPException(
@@ -121,7 +158,10 @@ def update_user_status(
             detail="User not found",
         )
 
-    if user.id == current_user.id and not is_active:
+    if (
+        user.id == current_user.id
+        and not is_active
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Admin cannot deactivate their own account",
@@ -138,7 +178,10 @@ def update_user_status(
         action="user_status_updated",
         entity_type="user",
         entity_id=user.id,
-        details=f"User active status changed to {is_active}",
+        details=(
+            "User active status changed to "
+            f"{is_active}"
+        ),
     )
 
     return {
@@ -149,12 +192,20 @@ def update_user_status(
     }
 
 
+ 
+# PATIENTS
+ 
+
 @router.get("/patients")
 def read_patients(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    patients = db.query(Patient).order_by(Patient.id).all()
+    patients = (
+        db.query(Patient)
+        .order_by(Patient.id.desc())
+        .all()
+    )
 
     return [
         {
@@ -176,7 +227,11 @@ def read_patient(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    patient = (
+        db.query(Patient)
+        .filter(Patient.id == patient_id)
+        .first()
+    )
 
     if not patient:
         raise HTTPException(
@@ -195,12 +250,20 @@ def read_patient(
     }
 
 
+ 
+# PHYSICIANS
+ 
+
 @router.get("/physicians")
 def read_physicians(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    physicians = db.query(Physician).order_by(Physician.id).all()
+    physicians = (
+        db.query(Physician)
+        .order_by(Physician.id.desc())
+        .all()
+    )
 
     return [
         {
@@ -221,7 +284,13 @@ def read_physician(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    physician = db.query(Physician).filter(Physician.id == physician_id).first()
+    physician = (
+        db.query(Physician)
+        .filter(
+            Physician.id == physician_id
+        )
+        .first()
+    )
 
     if not physician:
         raise HTTPException(
@@ -239,18 +308,27 @@ def read_physician(
     }
 
 
+ 
+# SESSIONS
+ 
+
 @router.get("/sessions")
 def read_sessions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    sessions = db.query(PatientSession).order_by(PatientSession.id).all()
+    sessions = (
+        db.query(PatientSession)
+        .order_by(
+            PatientSession.id.desc()
+        )
+        .all()
+    )
 
     return [
         {
             "id": session.id,
             "patient_id": session.patient_id,
-            "session_token": session.session_token,
             "status": session.status,
             "created_at": session.created_at,
             "expires_at": session.expires_at,
@@ -267,7 +345,9 @@ def read_session(
 ):
     session = (
         db.query(PatientSession)
-        .filter(PatientSession.id == session_id)
+        .filter(
+            PatientSession.id == session_id
+        )
         .first()
     )
 
@@ -280,12 +360,15 @@ def read_session(
     return {
         "id": session.id,
         "patient_id": session.patient_id,
-        "session_token": session.session_token,
         "status": session.status,
         "created_at": session.created_at,
         "expires_at": session.expires_at,
     }
 
+
+ 
+# AUDIT LOGS
+ 
 
 @router.get("/audit-logs")
 def read_audit_logs(

@@ -2,6 +2,18 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.patient import PatientResponse
+from app.schemas.medical_history import (
+    MedicalHistoryResponse,
+    TimelineItem,
+)
+from app.schemas.document import (
+    DocumentResponse,
+    LabReportResponse,
+    MedicationResponse,
+)
+from app.schemas.conversation import ConversationResponse
+
 
 class PhysicianCreate(BaseModel):
     full_name: str
@@ -52,3 +64,35 @@ class PhysicianSummaryResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+class PhysicianPatientRecordsResponse(BaseModel):
+    patient: PatientResponse
+
+    medical_history: list[
+        MedicalHistoryResponse
+    ]
+
+    documents: list[
+        DocumentResponse
+    ]
+
+    lab_reports: list[
+        LabReportResponse
+    ]
+
+    medications: list[
+        MedicationResponse
+    ]
+
+    conversations: list[
+        ConversationResponse
+    ]
+
+    summaries: list[
+        PhysicianSummaryResponse
+    ]
+
+    timeline: list[
+        TimelineItem
+    ]

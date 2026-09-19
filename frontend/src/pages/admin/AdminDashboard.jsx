@@ -9,7 +9,13 @@ import {
   getAdminPhysicians,
   getAdminSessions,
   getAuditLogs,
+  updateUserRole,
+  updateUserStatus,
 } from "../../services/adminService";
+
+import AdminStats from "../../components/admin/AdminStats";
+import UserTable from "../../components/admin/UserTable";
+
 
 export default function AdminDashboard() {
   const [users, setUsers] =
@@ -33,62 +39,113 @@ export default function AdminDashboard() {
   const [error, setError] =
     useState("");
 
-  useEffect(() => {
-    async function loadAdminData() {
-      try {
-        setLoading(true);
 
-        const [
-          usersResponse,
-          patientsResponse,
-          physiciansResponse,
-          sessionsResponse,
-          logsResponse,
-        ] = await Promise.all([
-          getUsers(),
-          getAdminPatients(),
-          getAdminPhysicians(),
-          getAdminSessions(),
-          getAuditLogs(),
-        ]);
+  async function loadAdminData() {
+    try {
+      setLoading(true);
+      setError("");
 
-        setUsers(
-          normalizeList(usersResponse)
-        );
+      const [
+        usersResponse,
+        patientsResponse,
+        physiciansResponse,
+        sessionsResponse,
+        logsResponse,
+      ] = await Promise.all([
+        getUsers(),
+        getAdminPatients(),
+        getAdminPhysicians(),
+        getAdminSessions(),
+        getAuditLogs(),
+      ]);
 
-        setPatients(
-          normalizeList(
-            patientsResponse
-          )
-        );
+      setUsers(
+        normalizeList(usersResponse)
+      );
 
-        setPhysicians(
-          normalizeList(
-            physiciansResponse
-          )
-        );
+      setPatients(
+        normalizeList(
+          patientsResponse
+        )
+      );
 
-        setSessions(
-          normalizeList(
-            sessionsResponse
-          )
-        );
+      setPhysicians(
+        normalizeList(
+          physiciansResponse
+        )
+      );
 
-        setAuditLogs(
-          normalizeList(logsResponse)
-        );
-      } catch (err) {
-        setError(
-          err.message ||
-            "Unable to load admin dashboard."
-        );
-      } finally {
-        setLoading(false);
-      }
+      setSessions(
+        normalizeList(
+          sessionsResponse
+        )
+      );
+
+      setAuditLogs(
+        normalizeList(logsResponse)
+      );
+
+    } catch (err) {
+      setError(
+        err.message ||
+          "Unable to load admin dashboard."
+      );
+    } finally {
+      setLoading(false);
     }
+  }
 
+
+  useEffect(() => {
     loadAdminData();
   }, []);
+
+
+  async function handleRoleChange(
+    user,
+    role
+  ) {
+    if (role === user.role) {
+      return;
+    }
+
+    try {
+      await updateUserRole(
+        user.id,
+        role
+      );
+
+      await loadAdminData();
+
+    } catch (err) {
+      setError(
+        err.message ||
+          "Unable to update user role."
+      );
+    }
+  }
+
+
+  async function handleStatusChange(
+    user,
+    isActive
+  ) {
+    try {
+      await updateUserStatus(
+        user.id,
+        isActive
+      );
+
+      await loadAdminData();
+
+    } catch (err) {
+      setError(
+        err.message ||
+          "Unable to update user status."
+      );
+    }
+  }
+
 
   if (loading) {
     return (
@@ -98,9 +155,12 @@ export default function AdminDashboard() {
     );
   }
 
+
   return (
     <div className="admin-dashboard">
+
       <header className="admin-header">
+
         <span>
           CLINOVA ADMIN
         </span>
@@ -114,7 +174,9 @@ export default function AdminDashboard() {
           physicians, sessions and audit
           activity.
         </p>
+
       </header>
+
 
       {error && (
         <div className="alert alert-error">
@@ -122,106 +184,64 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <div className="admin-stats">
-        <Stat
-          title="Users"
-          value={users.length}
-        />
 
-        <Stat
-          title="Patients"
-          value={patients.length}
-        />
+      <AdminStats
+        users={users}
+        patients={patients}
+        physicians={physicians}
+        sessions={sessions}
+        auditLogs={auditLogs}
+      />
 
-        <Stat
-          title="Physicians"
-          value={physicians.length}
-        />
-
-        <Stat
-          title="Sessions"
-          value={sessions.length}
-        />
-
-        <Stat
-          title="Audit Logs"
-          value={auditLogs.length}
-        />
-      </div>
 
       <section className="admin-section">
-        <h2>
-          Recent Users
-        </h2>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "16px",
+            marginBottom: "16px",
+          }}
+        >
+
+          <div>
+            <h2>
+              Recent Users
+            </h2>
+
+            <p
+              style={{
+                margin: 0,
+                color: "#64748b",
+                fontSize: "13px",
+              }}
+            >
+              Manage user roles and account
+              status.
+            </p>
+          </div>
+
+        </div>
+
 
         <UserTable
           users={users.slice(0, 10)}
+          onRoleChange={
+            handleRoleChange
+          }
+          onStatusChange={
+            handleStatusChange
+          }
         />
+
       </section>
+
     </div>
   );
 }
 
-function Stat({
-  title,
-  value,
-}) {
-  return (
-    <div className="admin-stat-card">
-      <span>{title}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function UserTable({
-  users,
-}) {
-  if (!users.length) {
-    return (
-      <div className="empty-state">
-        No users found.
-      </div>
-    );
-  }
-
-  return (
-    <div className="admin-table-wrapper">
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td>{user.id}</td>
-
-              <td>
-                {user.email}
-              </td>
-
-              <td>
-                {user.role}
-              </td>
-
-              <td>
-                {user.is_active === false
-                  ? "Inactive"
-                  : "Active"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 function normalizeList(
   response
