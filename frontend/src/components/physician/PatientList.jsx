@@ -153,14 +153,7 @@ export default function PatientList({
 
                 <div className="patient-list-info">
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      flexWrap: "wrap",
-                    }}
-                  >
+                  <div className="patient-list-name-row">
 
                     <strong>
                       {patient.full_name ||
@@ -168,21 +161,7 @@ export default function PatientList({
                     </strong>
 
                     {isEmergency && (
-                      <span
-                        style={{
-                          fontSize: "10px",
-                          fontWeight: "700",
-                          color: "#dc2626",
-                          background:
-                            "#fee2e2",
-                          padding:
-                            "3px 7px",
-                          borderRadius:
-                            "999px",
-                          letterSpacing:
-                            "0.4px",
-                        }}
-                      >
+                      <span className="emergency-badge">
                         EMERGENCY
                       </span>
                     )}

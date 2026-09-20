@@ -196,28 +196,14 @@ export default function AdminDashboard() {
 
       <section className="admin-section">
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "16px",
-            marginBottom: "16px",
-          }}
-        >
+        <div className="admin-section-heading">
 
           <div>
             <h2>
               Recent Users
             </h2>
 
-            <p
-              style={{
-                margin: 0,
-                color: "#64748b",
-                fontSize: "13px",
-              }}
-            >
+            <p className="admin-section-description">
               Manage user roles and account
               status.
             </p>
