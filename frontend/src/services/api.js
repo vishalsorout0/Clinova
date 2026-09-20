@@ -35,12 +35,16 @@ export async function apiRequest(
 
   let data = null;
 
-  const contentType = response.headers.get("content-type");
+  // 204 No Content means the server intentionally returned
+  // an empty response body. Never try to parse it as JSON.
+  if (response.status !== 204) {
+    const contentType = response.headers.get("content-type") || "";
 
-  if (contentType && contentType.includes("application/json")) {
-    data = await response.json();
-  } else {
-    data = await response.text();
+    if (contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
   }
 
   if (!response.ok) {
