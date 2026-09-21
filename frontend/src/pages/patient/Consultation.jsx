@@ -242,17 +242,6 @@ const {
 
       {completed && (
         <div className="completion-panel">
-          <div>
-            <h2>
-              Consultation Completed
-            </h2>
-
-            <p>
-              Your clinical information has been
-              collected. You can now generate an
-              AI clinical summary.
-            </p>
-          </div>
 
           {!summary ? (
             <Button

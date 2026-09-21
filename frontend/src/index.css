@@ -2179,7 +2179,6 @@ textarea:focus {
   margin: 20px auto 30px;
   padding: 24px;
 
-  background: #fff;
 
   border: 1px solid #bbf7d0;
   border-radius: 16px;
@@ -2192,8 +2191,6 @@ textarea:focus {
 .generated-summary {
   margin-top: 18px;
   padding: 20px;
-
-  background: #f8fafc;
 
   border: 1px solid #e2e8f0;
   border-radius: 12px;
